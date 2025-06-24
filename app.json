@@ -1,0 +1,62 @@
+{
+  "expo": {
+    "name": "react-native-expo",
+    "slug": "react-native-expo",
+    "scheme": "reactnativeexpo",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./src/assets/images/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./src/assets/images/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": ["**/*", "assets/*"],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.dynamicinfra.reactnativeexpo",
+      "associatedDomains": ["applinks:yourdomain.com"],
+      "infoPlist": {
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": ["reactnativeexpo"]
+          }
+        ]
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "package": "com.dynamicinfra.reactnativeexpo",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "yourdomain.com"
+            },
+            {
+              "scheme": "reactnativeexpo"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
+    },
+    "web": {
+      "favicon": "./src/assets/images/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "165d3eb3-5b25-41a1-a3b2-8cf02e73f818"
+      }
+    },
+    "plugins": ["expo-secure-store"],
+    "newArchEnabled": true
+  }
+}
