@@ -1,22 +1,23 @@
-import React, { useEffect, useState } from "react";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import Icon from "react-native-vector-icons/MaterialCommunityIcons";
-import { client } from "../client";
-import "react-native-get-random-values";
-import { Linking, Alert, View, SafeAreaView } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import {
+  createNativeStackNavigator,
+  NativeStackNavigationProp,
+} from "@react-navigation/native-stack";
+import React, { useEffect } from "react";
+import { Alert, Linking, SafeAreaView } from "react-native";
+import "react-native-get-random-values";
+import { client } from "../client";
 import CustomTabBar from "../CustomTabBar";
 import SplashScreen from "../screens/SplashScreen";
 
-import HomeScreen from "../screens/HomeScreen";
-import SendScreen from "../screens/SendScreen";
-import RequestScreen from "../screens/RequestScreen";
-import ProfileScreen from "../screens/ProfileScreen";
 import { useReactiveClient } from "@dynamic-labs/react-hooks";
 import { supabase } from "../lib/supabase";
 import { LoginView, RootStackParamList } from "../LoginView/LoginView";
+import HomeScreen from "../screens/HomeScreen";
+import ProfileScreen from "../screens/ProfileScreen";
+import RequestScreen from "../screens/RequestScreen";
+import SendScreen from "../screens/SendScreen";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -50,6 +51,13 @@ const TabNavigator = () => {
       })}
     >
       <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{
+          tabBarLabel: "Home",
+        }}
+      />
+      <Tab.Screen
         name="Send"
         component={SendScreen}
         options={{
@@ -61,13 +69,6 @@ const TabNavigator = () => {
         component={RequestScreen}
         options={{
           tabBarLabel: "Request",
-        }}
-      />
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{
-          tabBarLabel: "Home",
         }}
       />
       <Tab.Screen
