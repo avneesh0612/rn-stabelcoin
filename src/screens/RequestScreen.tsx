@@ -64,24 +64,30 @@ const RequestScreen = () => {
     const isAmountValid =
       !!amount && !isNaN(Number(amount)) && Number(amount) > 0;
     return (
-      <View style={styles.centeredContainer}>
-        <Text style={styles.title}>Request</Text>
-        <Text style={styles.subtitle}>How much ?</Text>
-        <TextInput
-          style={styles.balanceInput}
-          value={amount}
-          onChangeText={setAmount}
-          keyboardType="numeric"
-          placeholder="$0.00"
-          textAlign="center"
-        />
-        <TouchableOpacity
-          style={[styles.button, !isAmountValid && styles.buttonDisabled]}
-          onPress={() => setStep(2)}
-          disabled={!isAmountValid}
-        >
-          <Text style={styles.buttonText}>Continue →</Text>
-        </TouchableOpacity>
+      <View style={{ flex: 1, backgroundColor: "#fafbfc" }}>
+        {/* Header */}
+        <View style={styles.headerContainer}>
+          <Text style={styles.headerTitle}>Request</Text>
+        </View>
+        {/* Main Content */}
+        <View style={styles.topContentContainer}>
+          <Text style={styles.subtitle}>How much ?</Text>
+          <TextInput
+            style={styles.balanceInput}
+            value={amount}
+            onChangeText={setAmount}
+            keyboardType="numeric"
+            placeholder="$0.00"
+            textAlign="center"
+          />
+          <TouchableOpacity
+            style={[styles.button, !isAmountValid && styles.buttonDisabled]}
+            onPress={() => setStep(2)}
+            disabled={!isAmountValid}
+          >
+            <Text style={styles.buttonText}>Continue →</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -420,12 +426,28 @@ const styles = StyleSheet.create({
     backgroundColor: "#FAFAFC",
   },
   headerContainer: {
-    height: 70,
-    justifyContent: "flex-end",
-    alignItems: "center",
+    width: "100%",
+    paddingTop: 56,
+    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#F1F1F4",
-    paddingBottom: 10,
+    backgroundColor: "#fafbfc",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#222",
+    textAlign: "center",
+  },
+  topContentContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "flex-start",
+    paddingHorizontal: 24,
+    paddingTop: 40,
+    width: "100%",
   },
   header: {
     fontSize: 18,

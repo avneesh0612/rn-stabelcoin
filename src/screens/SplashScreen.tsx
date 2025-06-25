@@ -1,5 +1,6 @@
 import React from "react";
 import { View, Image, Text, StyleSheet, Dimensions } from "react-native";
+import LogoText from "../assets/images/logo-text.svg";
 
 const { width, height } = Dimensions.get("window");
 
@@ -22,7 +23,7 @@ export default function SplashScreen() {
 
       {/* App name and logo at the bottom */}
       <View style={styles.bottomContainer}>
-        <Image source={require("../assets/images/logo-text.png")} />
+        <LogoText width={120} height={32} />
       </View>
     </View>
   );
@@ -32,13 +33,13 @@ const styles = StyleSheet.create({
   container: { flex: 1, alignItems: "center", justifyContent: "center" },
   background: {
     ...StyleSheet.absoluteFillObject,
-    width: width,
-    height: height,
+    width,
+    height,
     opacity: 0.2,
   },
   logo: {
-    width,
-    height,
+    width: width * 1.2,
+    height: height * 1.2,
     flex: 1,
     justifyContent: "center",
     alignItems: "center",

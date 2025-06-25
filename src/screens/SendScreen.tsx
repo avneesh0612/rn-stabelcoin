@@ -19,27 +19,8 @@ import { client } from "../client";
 import { supabase } from "../lib/supabase";
 import { useRoute, RouteProp } from "@react-navigation/native";
 import InitialsAvatar from "../components/InitialsAvatar";
-
-const USDC_CONTRACT = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
-const ERC20_ABI = [
-  {
-    constant: false,
-    inputs: [
-      { name: "to", type: "address" },
-      { name: "value", type: "uint256" },
-    ],
-    name: "transfer",
-    outputs: [{ name: "", type: "bool" }],
-    type: "function",
-  },
-  {
-    constant: true,
-    inputs: [{ name: "account", type: "address" }],
-    name: "balanceOf",
-    outputs: [{ name: "", type: "uint256" }],
-    type: "function",
-  },
-];
+import { USDC_CONTRACT, ERC20_ABI } from "../utils/constants";
+import { fetchTokenBalances, TokenBalance } from "../utils/balance";
 
 type SendScreenParams = {
   recipient?: string;
@@ -65,6 +46,7 @@ const SendScreen = () => {
   const [note, setNote] = useState(route.params?.note || "");
   const [isLoading, setIsLoading] = useState(false);
   const [balance, setBalance] = useState<string>("0");
+  const [tokenBalances, setTokenBalances] = useState<TokenBalance[]>([]);
   const [step, setStep] = useState(
     route.params?.recipient && route.params?.amount ? 3 : 1
   );
@@ -73,6 +55,13 @@ const SendScreen = () => {
   const [paymentDate, setPaymentDate] = useState<string>("");
   const [status, setStatus] = useState<string>("");
   const [quickPayUsers, setQuickPayUsers] = useState<QuickPayUser[]>([]);
+  const [lastSentPayment, setLastSentPayment] = useState<{
+    amount: string;
+    recipient: any;
+    note: string;
+    date: string;
+    status: string;
+  } | null>(null);
 
   useEffect(() => {
     // Handle payment link data from deep link
@@ -94,29 +83,26 @@ const SendScreen = () => {
       try {
         const primaryWallet = client.wallets.primary;
         if (!primaryWallet) return;
-
-        const walletViemClient = client.viem.createWalletClient({
-          wallet: primaryWallet,
-          chain: baseSepolia,
-        });
-
-        const publicClient = client.viem.createPublicClient({
-          chain: baseSepolia,
-        });
-
-        const balance = await publicClient.readContract({
-          address: USDC_CONTRACT,
-          abi: ERC20_ABI,
-          functionName: "balanceOf",
-          args: [primaryWallet.address],
-        });
-
-        setBalance(formatUnits(balance as bigint, 6)); // USDC has 6 decimals
+        const accountAddress = primaryWallet.address;
+        const tokens = await fetchTokenBalances({ accountAddress });
+        setTokenBalances(tokens);
+        // Prefer USDC, fallback to native
+        const usdc = tokens.find(
+          (t) =>
+            t.symbol === "USDC" ||
+            t.address.toLowerCase() === USDC_CONTRACT.toLowerCase()
+        );
+        const native = tokens.find((t) => t.isNative);
+        const rawBalance = usdc ? usdc.balance : native ? native.balance : 0;
+        // Round down to 1 decimal place
+        const roundedBalance = Math.floor(rawBalance * 10) / 10;
+        setBalance(roundedBalance.toString());
       } catch (error) {
         console.error("Error fetching balance:", error);
+        setBalance("0");
+        setTokenBalances([]);
       }
     };
-
     fetchBalance();
   }, [wallets.primary]);
 
@@ -244,8 +230,16 @@ const SendScreen = () => {
           .eq("id", route.params.paymentLinkId);
       }
 
-      setPaymentDate(new Date().toLocaleDateString());
-      setStatus("Complete");
+      const sentPayment = {
+        amount,
+        recipient: selectedRecipient,
+        note,
+        date: new Date().toLocaleDateString(),
+        status: "Complete",
+      };
+      setLastSentPayment(sentPayment);
+      setPaymentDate(sentPayment.date);
+      setStatus(sentPayment.status);
       setStep(5);
       setAmount("");
       setRecipient("");
@@ -277,25 +271,31 @@ const SendScreen = () => {
     const isAmountValid =
       !!amount && !isNaN(Number(amount)) && Number(amount) > 0;
     return (
-      <View style={styles.centeredContainer}>
-        <Text style={styles.title}>Send</Text>
-        <Text style={styles.subtitle}>How much ?</Text>
-        <TextInput
-          style={styles.balanceInput}
-          value={amount}
-          onChangeText={setAmount}
-          keyboardType="numeric"
-          placeholder="$0.00"
-          textAlign="center"
-        />
-        <Text style={styles.balanceHint}>Your balance ${balance}</Text>
-        <TouchableOpacity
-          style={[styles.button, !isAmountValid && styles.buttonDisabled]}
-          onPress={() => setStep(2)}
-          disabled={!isAmountValid}
-        >
-          <Text style={styles.buttonText}>Continue →</Text>
-        </TouchableOpacity>
+      <View style={{ flex: 1, backgroundColor: "#fafbfc" }}>
+        {/* Header */}
+        <View style={styles.headerContainer}>
+          <Text style={styles.headerTitle}>Send</Text>
+        </View>
+        {/* Main Content */}
+        <View style={styles.topContentContainer}>
+          <Text style={styles.subtitle}>How much ?</Text>
+          <TextInput
+            style={styles.balanceInput}
+            value={amount}
+            onChangeText={setAmount}
+            keyboardType="numeric"
+            placeholder="$0.00"
+            textAlign="center"
+          />
+          <Text style={styles.balanceHint}>Your balance ${balance}</Text>
+          <TouchableOpacity
+            style={[styles.button, !isAmountValid && styles.buttonDisabled]}
+            onPress={() => setStep(2)}
+            disabled={!isAmountValid}
+          >
+            <Text style={styles.buttonText}>Continue →</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   }
@@ -425,8 +425,8 @@ const SendScreen = () => {
               </View>
             </View>
             <View style={styles.rowBetween}>
-              <Text style={styles.label}>Fee</Text>
-              <Text style={styles.value}>$0.00</Text>
+              <Text style={styles.label}>Note</Text>
+              <Text style={styles.value}>{note}</Text>
             </View>
           </View>
           <TouchableOpacity
@@ -445,6 +445,7 @@ const SendScreen = () => {
 
   // Step 5: Payment Sent
   if (step === 5) {
+    const sent = lastSentPayment;
     return (
       <View style={styles.centeredContainer}>
         <Text style={styles.title}>Payment Sent!</Text>
@@ -455,33 +456,37 @@ const SendScreen = () => {
         <View style={styles.card}>
           <View style={styles.rowBetween}>
             <Text style={styles.label}>Amount</Text>
-            <Text style={styles.value}>${amount}</Text>
+            <Text style={styles.value}>${sent?.amount}</Text>
           </View>
           <View style={styles.rowBetween}>
             <Text style={styles.label}>To</Text>
             <View style={styles.rowCenter}>
-              {selectedRecipient?.profilePictureUrl ? (
+              {sent?.recipient?.profilePictureUrl ? (
                 <Image
-                  source={{ uri: selectedRecipient.profilePictureUrl }}
+                  source={{ uri: sent.recipient.profilePictureUrl }}
                   style={styles.avatarSmall}
                 />
               ) : (
                 <InitialsAvatar
-                  name={selectedRecipient?.name || selectedRecipient?.email}
+                  name={sent?.recipient?.name || sent?.recipient?.email}
                   size={28}
                   style={{ marginRight: 8 }}
                 />
               )}
-              <Text style={styles.value}>{selectedRecipient?.name}</Text>
+              <Text style={styles.value}>{sent?.recipient?.name}</Text>
             </View>
           </View>
           <View style={styles.rowBetween}>
+            <Text style={styles.label}>Note</Text>
+            <Text style={styles.value}>{sent?.note}</Text>
+          </View>
+          <View style={styles.rowBetween}>
             <Text style={styles.label}>Date</Text>
-            <Text style={styles.value}>{paymentDate}</Text>
+            <Text style={styles.value}>{sent?.date}</Text>
           </View>
           <View style={styles.rowBetween}>
             <Text style={styles.label}>Status</Text>
-            <Text style={styles.statusComplete}>Complete</Text>
+            <Text style={styles.statusComplete}>{sent?.status}</Text>
           </View>
         </View>
         <TouchableOpacity style={styles.button} onPress={() => setStep(1)}>
@@ -653,6 +658,30 @@ const styles = StyleSheet.create({
     top: 48, // or adjust for your status bar
     left: 24,
     zIndex: 10,
+  },
+  headerContainer: {
+    width: "100%",
+    paddingTop: 56,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F1F1F4",
+    backgroundColor: "#fafbfc",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#222",
+    textAlign: "center",
+  },
+  topContentContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "flex-start",
+    paddingHorizontal: 24,
+    paddingTop: 40,
+    width: "100%",
   },
 });
 

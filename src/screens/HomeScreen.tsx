@@ -20,6 +20,8 @@ import { supabase } from "../lib/supabase";
 import { Database } from "../types/database.types";
 import InitialsAvatar from "../components/InitialsAvatar";
 import SkeletonLoader from "../components/SkeletonLoader";
+import { USDC_CONTRACT } from "../utils/constants";
+import { fetchTokenBalances, TokenBalance } from "../utils/balance";
 
 interface FundRequest {
   id: string;
@@ -59,6 +61,8 @@ const HomeScreen: React.FC = () => {
   const navigation =
     useNavigation<BottomTabNavigationProp<MainAppTabParamList>>();
   const [quickPayUsers, setQuickPayUsers] = useState<QuickPayUser[]>([]);
+  const [balance, setBalance] = useState<string>("0");
+  const [tokenBalances, setTokenBalances] = useState<TokenBalance[]>([]);
 
   const fetchData = async () => {
     try {
@@ -158,6 +162,33 @@ const HomeScreen: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.authenticatedUser, wallets.primary]);
 
+  useEffect(() => {
+    const fetchBalance = async () => {
+      try {
+        if (!wallets.primary) return;
+        const accountAddress = wallets.primary.address;
+        const tokens = await fetchTokenBalances({ accountAddress });
+        setTokenBalances(tokens);
+        // Prefer USDC, fallback to native
+        const usdc = tokens.find(
+          (t) =>
+            t.symbol === "USDC" ||
+            t.address.toLowerCase() === USDC_CONTRACT.toLowerCase()
+        );
+        const native = tokens.find((t) => t.isNative);
+        const rawBalance = usdc ? usdc.balance : native ? native.balance : 0;
+        // Round down to 1 decimal place
+        const roundedBalance = Math.floor(rawBalance * 10) / 10;
+        setBalance(roundedBalance.toString());
+      } catch (error) {
+        console.error("Error fetching balance:", error);
+        setBalance("0");
+        setTokenBalances([]);
+      }
+    };
+    fetchBalance();
+  }, [wallets.primary]);
+
   const onRefresh = () => {
     setRefreshing(true);
     fetchData();
@@ -203,7 +234,7 @@ const HomeScreen: React.FC = () => {
           {/* Balance Card */}
           <View style={styles.balanceCard}>
             <Text style={styles.balanceCardLabel}>Available balance</Text>
-            <Text style={styles.balanceCardAmount}>$323.34</Text>
+            <Text style={styles.balanceCardAmount}>${balance}</Text>
             <View style={styles.actionRow}>
               <TouchableOpacity
                 style={styles.pillButton}
@@ -462,34 +493,40 @@ const styles = StyleSheet.create({
   actionRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     width: "100%",
     marginTop: 8,
     gap: 12,
+    paddingHorizontal: 8,
   },
   pillButton: {
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
+    flexDirection: "column",
     backgroundColor: "#fff",
-    borderRadius: 18,
+    borderRadius: 32,
     borderWidth: 1,
     borderColor: "#E0E4EA",
-    paddingVertical: 14,
-    marginHorizontal: 4,
+    paddingVertical: 18,
+    paddingHorizontal: 0,
+    marginHorizontal: 0,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 2,
-    elevation: 1,
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    elevation: 2,
+    minWidth: 90,
+    maxWidth: 120,
   },
   pillButtonIcon: {
-    marginBottom: 2,
+    marginBottom: 6,
+    marginRight: 0,
   },
   pillButtonText: {
-    fontSize: 15,
+    fontSize: 16,
     color: "#222",
     fontWeight: "600",
-    marginTop: 2,
   },
   quickPayRow: {
     marginTop: 18,
