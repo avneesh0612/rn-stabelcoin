@@ -18,6 +18,7 @@ import HomeScreen from "../screens/HomeScreen";
 import ProfileScreen from "../screens/ProfileScreen";
 import RequestScreen from "../screens/RequestScreen";
 import SendScreen from "../screens/SendScreen";
+import { navigate } from "./RootNavigation";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator();
@@ -84,8 +85,6 @@ const TabNavigator = () => {
 
 const AppNavigator = () => {
   const { wallets, sdk } = useReactiveClient(client);
-  const navigation =
-    useNavigation<NativeStackNavigationProp<RootStackParamList>>();
 
   useEffect(() => {
     const handleAuthSuccess = async (user: any) => {
@@ -170,8 +169,8 @@ const AppNavigator = () => {
           if (error) throw error;
           if (!paymentLink) throw new Error("Payment link not found");
 
-          // Navigate to MainApp and then to Send screen with payment link data
-          navigation.navigate("MainApp", {
+          // Navigate to MainApp and then to Send screen with payment link data using navigation ref
+          navigate("MainApp", {
             screen: "Send",
             params: {
               recipient: paymentLink.from,
@@ -200,7 +199,7 @@ const AppNavigator = () => {
     return () => {
       subscription.remove();
     };
-  }, [navigation]);
+  }, []);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: "#f7f8fa" }}>

@@ -87,7 +87,7 @@ const HomeScreen: React.FC = () => {
       const { data: transactions, error: txError } = await supabase
         .from("transactions")
         .select(
-          "id, amount, created_at, tx_hash, sender_email, recipient_email, status, type, note"
+          "id, amount, created_at, tx_hash, sender_email, recipient_email, sender_address, recipient_address, status, type, note"
         )
         .or(
           `sender_email.eq.${email},recipient_email.eq.${email},sender_email.eq.${address},recipient_email.eq.${address}`
@@ -156,42 +156,41 @@ const HomeScreen: React.FC = () => {
     }
   };
 
+  const fetchBalance = async () => {
+    try {
+      if (!wallets.primary) return;
+      const accountAddress = wallets.primary.address;
+      const tokens = await fetchTokenBalances({ accountAddress });
+      setTokenBalances(tokens);
+      // Prefer USDC, fallback to native
+      const usdc = tokens.find(
+        (t) =>
+          t.symbol === "USDC" ||
+          t.address.toLowerCase() === USDC_CONTRACT.toLowerCase()
+      );
+      const native = tokens.find((t) => t.isNative);
+      const rawBalance = usdc ? usdc.balance : native ? native.balance : 0;
+      // Round down to 1 decimal place
+      const roundedBalance = Math.floor(rawBalance * 10) / 10;
+      setBalance(roundedBalance.toString());
+    } catch (error) {
+      console.error("Error fetching balance:", error);
+      setBalance("0");
+      setTokenBalances([]);
+    }
+  };
+
   useEffect(() => {
     setIsLoading(true);
     fetchData();
+    fetchBalance();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [auth.authenticatedUser, wallets.primary]);
-
-  useEffect(() => {
-    const fetchBalance = async () => {
-      try {
-        if (!wallets.primary) return;
-        const accountAddress = wallets.primary.address;
-        const tokens = await fetchTokenBalances({ accountAddress });
-        setTokenBalances(tokens);
-        // Prefer USDC, fallback to native
-        const usdc = tokens.find(
-          (t) =>
-            t.symbol === "USDC" ||
-            t.address.toLowerCase() === USDC_CONTRACT.toLowerCase()
-        );
-        const native = tokens.find((t) => t.isNative);
-        const rawBalance = usdc ? usdc.balance : native ? native.balance : 0;
-        // Round down to 1 decimal place
-        const roundedBalance = Math.floor(rawBalance * 10) / 10;
-        setBalance(roundedBalance.toString());
-      } catch (error) {
-        console.error("Error fetching balance:", error);
-        setBalance("0");
-        setTokenBalances([]);
-      }
-    };
-    fetchBalance();
-  }, [wallets.primary]);
 
   const onRefresh = () => {
     setRefreshing(true);
     fetchData();
+    fetchBalance();
   };
 
   // Helper for time ago

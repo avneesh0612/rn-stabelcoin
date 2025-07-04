@@ -1,26 +1,23 @@
 import { useReactiveClient } from "@dynamic-labs/react-hooks";
+import { RouteProp, useRoute } from "@react-navigation/native";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
+  FlatList,
+  Image,
   StyleSheet,
   Text,
   TextInput,
-  View,
   TouchableOpacity,
-  Image,
-  FlatList,
+  View,
 } from "react-native";
-import { encodeFunctionData, formatUnits, parseUnits } from "viem";
+import { encodeFunctionData, parseUnits } from "viem";
 import { baseSepolia } from "viem/chains";
 import { client } from "../client";
-import { supabase } from "../lib/supabase";
-import { useRoute, RouteProp } from "@react-navigation/native";
 import InitialsAvatar from "../components/InitialsAvatar";
-import { USDC_CONTRACT, ERC20_ABI } from "../utils/constants";
+import { supabase } from "../lib/supabase";
 import { fetchTokenBalances, TokenBalance } from "../utils/balance";
+import { ERC20_ABI, USDC_CONTRACT } from "../utils/constants";
 
 type SendScreenParams = {
   recipient?: string;
@@ -47,6 +44,7 @@ const SendScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [balance, setBalance] = useState<string>("0");
   const [tokenBalances, setTokenBalances] = useState<TokenBalance[]>([]);
+  const [recipientLocked, setRecipientLocked] = useState(false);
   const [step, setStep] = useState(
     route.params?.recipient && route.params?.amount ? 3 : 1
   );
@@ -62,6 +60,7 @@ const SendScreen = () => {
     date: string;
     status: string;
   } | null>(null);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     // Handle payment link data from deep link
@@ -137,19 +136,36 @@ const SendScreen = () => {
 
   // If recipient param is provided, preselect the recipient once users are loaded
   useEffect(() => {
-    if (
-      route.params?.recipient &&
-      quickPayUsers.length > 0 &&
-      !selectedRecipient
-    ) {
+    if (route.params?.recipient && quickPayUsers.length > 0) {
       const found = quickPayUsers.find(
         (u) => u.email.toLowerCase() === route.params.recipient?.toLowerCase()
       );
       if (found) {
         setSelectedRecipient(found);
+        setRecipientLocked(true);
+        // If recipient, amount, and note are provided, skip to review screen
+        if (route.params?.amount && route.params?.note) {
+          setStep(4); // Go directly to review
+        } else if (route.params?.amount) {
+          setStep(3); // Go to note step
+        } else {
+          setStep(2); // Go to recipient step
+        }
+      } else {
+        setStep(2);
+        setRecipientLocked(false);
       }
+      setReady(true);
+    } else if (route.params?.amount) {
+      setStep(2);
+      setRecipientLocked(false);
+      setReady(true);
+    } else if (quickPayUsers.length > 0 || !route.params) {
+      // If no params, or users loaded, ready
+      setReady(true);
     }
-  }, [route.params?.recipient, quickPayUsers, selectedRecipient]);
+    // If no params, default flow
+  }, [route.params, quickPayUsers]);
 
   // Move send logic to review step
   const handleSend = async () => {
@@ -266,6 +282,8 @@ const SendScreen = () => {
     }
   };
 
+  if (!ready) return null;
+
   // Step 1: Enter Amount
   if (step === 1) {
     const isAmountValid =
@@ -302,8 +320,8 @@ const SendScreen = () => {
 
   // Step 2: Select Recipient
   if (step === 2) {
-    // If recipient is already selected (from params), skip this step
-    if (selectedRecipient) {
+    // If recipient is locked, skip this step
+    if (recipientLocked && selectedRecipient) {
       setStep(3);
       return null;
     }
@@ -396,8 +414,13 @@ const SendScreen = () => {
         <TouchableOpacity
           style={styles.backButtonAbsolute}
           onPress={() => setStep(3)}
+          disabled={recipientLocked}
         >
-          <Text style={styles.backButtonText}>{"< Back"}</Text>
+          <Text
+            style={[styles.backButtonText, recipientLocked && { opacity: 0.5 }]}
+          >
+            {"< Back"}
+          </Text>
         </TouchableOpacity>
         <View style={styles.centeredContainer}>
           <Text style={styles.title}>Review Payment</Text>
