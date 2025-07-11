@@ -1,9 +1,9 @@
 {
   "expo": {
-    "name": "react-native-expo",
-    "slug": "react-native-expo",
-    "scheme": "reactnativeexpo",
-    "version": "1.0.0",
+    "name": "react-native-stablecoin-app",
+    "slug": "react-native-stablecoin-app",
+    "scheme": "react-native-stablecoin-app",
+    "version": "1.0.3",
     "orientation": "portrait",
     "icon": "./src/assets/images/icon.png",
     "userInterfaceStyle": "light",
@@ -12,17 +12,32 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*", "assets/*"],
+    "assetBundlePatterns": [
+      "**/*",
+      "assets/*"
+    ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.dynamicinfra.reactnativeexpo",
-      "associatedDomains": ["applinks:yourdomain.com"],
+      "bundleIdentifier": "com.dynamicinfra.ReactNativeStablecoinApp",
+      "buildNumber": "3",
+      "associatedDomains": [
+        "applinks:yourdomain.com",
+        "applinks:yourdomain.com"
+      ],
       "infoPlist": {
         "CFBundleURLTypes": [
           {
-            "CFBundleURLSchemes": ["reactnativeexpo"]
+            "CFBundleURLSchemes": [
+              "ReactNativeStablecoinApp"
+            ]
+          },
+          {
+            "CFBundleURLSchemes": [
+              "ReactNativeStablecoinApp"
+            ]
           }
-        ]
+        ],
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -30,7 +45,7 @@
         "foregroundImage": "./src/assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.dynamicinfra.reactnativeexpo",
+      "package": "com.dynamicinfra.ReactNativeStablecoinApp",
       "intentFilters": [
         {
           "action": "VIEW",
@@ -41,10 +56,13 @@
               "host": "yourdomain.com"
             },
             {
-              "scheme": "reactnativeexpo"
+              "scheme": "ReactNativeStablecoinApp"
             }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -53,10 +71,12 @@
     },
     "extra": {
       "eas": {
-        "projectId": "165d3eb3-5b25-41a1-a3b2-8cf02e73f818"
+        "projectId": "5a3dd677-af09-4299-b354-ea01a2eca9c1"
       }
     },
-    "plugins": ["expo-secure-store"],
+    "plugins": [
+      "expo-secure-store"
+    ],
     "newArchEnabled": true
   }
 }
